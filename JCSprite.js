@@ -1,16 +1,30 @@
+//REQUIRES: https://github.com/alexei/sprintf.js
+
 var jc = jc || {};
 
 jc.AnimationTypeOnce=0;
-jc.AnimationTypeLoop=1;    
+jc.AnimationTypeLoop=1;  
+
+if (!String.prototype.format) {
+  String.prototype.format = function() {
+    var args = arguments;
+    return this.replace(/{(\d+)}/g, function(match, number) { 
+      return typeof args[number] != 'undefined'
+        ? args[number]
+        : match
+      ;
+    });
+  };
+}
+  
 jc.Sprite = cc.Sprite.extend({
-	batch:null,
-	animations:[],
-	state:0,
-	idle:0,
-	moving:0,
-	currentMove:null,
-	nextState:null,	
 	initWithPlist: function(plist, sheet, firstFrame) {
+		this.animations = [];
+		this.batch = null;
+		this.state = 0;
+		this.moving = 0;
+		this.currentMove = null;
+		this.nextState = 0;
 		cc.SpriteFrameCache.getInstance().addSpriteFrames(plist);
 		this.batch = cc.SpriteBatchNode.create(sheet);
 		var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(firstFrame); 		
@@ -23,9 +37,12 @@ jc.Sprite = cc.Sprite.extend({
 		var frame;
 		//loop through the frames using the nameFormat and init the animation
 		for (var i = 0; i < entry.frames; i++) {
-			//todo implement sprintf style formatter
-			str = "stance0" + i + ".png";
+			//https://github.com/alexei/sprintf.js <--must have
+			str = entry.nameFormat.format(i); 
 			frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(str);
+			if (!frame){
+				throw "Couldn't get frame. What is: " + str;
+			}
 			animFrames.push(frame);			
 		}
     	//make the animation
@@ -89,7 +106,7 @@ jc.Sprite = cc.Sprite.extend({
 			this.stopAction(stopMe.action);
 			this.runAction(startMe.action);
 		}else{
-			throw "Couldn't set state. What is: " + state;			
+			throw "Couldn't set state. What is state: " + state + " currentState:" + currentState;			
 		}
 	},
 	centerOn:function(point, xmax, ymax, xmin, ymin){
@@ -103,6 +120,5 @@ jc.Sprite = cc.Sprite.extend({
 		var viewPoint = cc.pSub(centerOfView, actualPosition);
 		this.setPosition(viewPoint);
 		
-				
 	}
 });
