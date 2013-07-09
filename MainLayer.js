@@ -1,79 +1,65 @@
+
 var MainLayer = cc.Layer.extend({
 	ryu: null,
 	ryuBatch: null,
 	wizardBatch: null,
 	wizards: [],
+	stateIdle: 0,
+	stateWalking: 1,
+	statePunching: 2,
 	init: function() {
 		if (this._super()) {
-
-			if ('mouse' in sys.capabilities) {
-				this.setMouseEnabled(true);
-			} else {
-				this.setTouchMode(cc.TOUCH_ALL_AT_ONCE);
-				this.setTouchEnabled(true);
-			}
-			JCSprite.init();
-
-			cc.log("ryuPlist:" + ryuPlist);
-			cc.SpriteFrameCache.getInstance().addSpriteFrames(ryuPlist);
-			cc.SpriteFrameCache.getInstance().addSpriteFrames(wizardPlist);
-			//make tilemap
-			//make ryu
-			//make wizards
-			this.ryuBatch = cc.SpriteBatchNode.create(ryuSheet);
-			this.ryu = cc.Sprite.createWithSpriteFrameName("stance00.png");
-			var animFrames = [];
-			var str = "";
-			var frame;
-			for (var i = 0; i < 8; i++) {
-				str = "stance0" + i + ".png";
-				frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(str);
-				animFrames.push(frame);
-			}
-
-			var animation = cc.Animation.create(animFrames, 0.05);
-			this.stance = cc.RepeatForever.create(cc.Animate.create(animation));
-			this.ryu.runAction(this.stance);
-			i = 0;
-			for (i = 0; i < 8; i++) {
-				str = "walkf0" + i + ".png";
-				frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(str);
-				animFrames.push(frame);
-			}
-			var animation = cc.Animation.create(animFrames, 0.05);
-			this.walk = cc.RepeatForever.create(cc.Animate.create(animation));
-
-
-			this.ryuBatch.addChild(this.ryu);
-			this.addChild(this.ryuBatch);
-			this.ryu.setPosition(cc.p(100, 100));
-
-			this.wizardBatch = cc.SpriteBatchNode.create(wizardSheet);
-			var wizFrames = [];
-			for (var i = 0; i < 24; i++) {
-				str = "wizard.Idle." + i + ".new.png";
-				frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(str);
-				wizFrames.push(frame);
-			}
-			animation = cc.Animation.create(wizFrames, .05);
-
-			//wizards
-			var size = cc.Director.getInstance().getWinSize();;
-
-			for (var i = 0; i < 80; i++) {
-				this.wizards.push(cc.Sprite.createWithSpriteFrameName("wizard.Idle.0.new.png"));
-				this.wizards[i].runAction(cc.RepeatForever.create(cc.Animate.create(animation)));
-				this.wizardBatch.addChild(this.wizards[i]);
-				var x = Math.floor(Math.random() * size.width);
-				var y = Math.floor(Math.random() * size.height);
-				this.wizards[i].setPosition(cc.p(x, y));
-			}
-			this.addChild(this.wizardBatch);
-
+			this.tileMapAndHero();
+			
+			//make 80 wizards arranged in a circle around ryu
+			
+			//onmouse or touch move ryu
+		
 			return true;
 		} else {
 			return false;
 		}
+	},
+	tileMapAndHero: function(){
+		//make ryu
+		var size = cc.Director.getInstance().getWinSize();;
+		this.ryu = new jc.Sprite();
+		this.ryu.initWithPlist(ryuPlist, ryuSheet, 'stance00.png');
+		var idle = {
+			state:this.stateIdle,
+			nameFormat:"stance0%d.png",
+			frames: 9,
+			delay:.1,
+			type:jc.AnimationTypeLoop			
+		};
+		
+		var walk = {
+			state:this.stateWalking,
+			nameFormat:"walkf0%d.png",
+			frames: 9,
+			delay:.1,
+			type:jc.AnimationTypeLoop			
+		};		
+		
+		var punch = {
+			state:this.statePunching,
+			nameFormat:"walkf0%d.png", //todo change me
+			frames: 9,
+			delay:.1,
+			type:jc.AnimationTypeOnce
+		};
+		
+				
+		this.ryu.addDef(idle);
+		this.ryu.addDef(walk);
+		this.ryu.addDef(punch);	
+		this.ryu.idle = this.stateIdle;
+		this.ryu.moving = this.stateWalking;	
+		this.ryu.setState(this.ryu.idle);
+		this.addChild(this.ryu.batch);
+		this.addChild(this.ryu);
+		this.ryu.centerOn({x:300,y:300}, size.width/2, size.height/2, 150,150);
+		
 	},
 	onTouchBegan: function(touch, event) {
 		//todo convert to [], move sprite

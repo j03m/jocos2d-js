@@ -1,8 +1,19 @@
-var JCSprite = cc.Sprite.extend({
+var jc = jc || {};
+
+jc.AnimationTypeOnce=0;
+jc.AnimationTypeLoop=1;    
+jc.Sprite = cc.Sprite.extend({
+	batch:null,
+	animations:[],
+	state:0,
+	idle:0,
+	moving:0,
+	currentMove:null,
+	nextState:null,	
 	initWithPlist: function(plist, sheet, firstFrame) {
 		cc.SpriteFrameCache.getInstance().addSpriteFrames(plist);
 		this.batch = cc.SpriteBatchNode.create(sheet);
-		var frame = cc.SpriteFrameCache.getInstance().sharedSpriteFrameCache(firstFrame); 		
+		var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(firstFrame); 		
 		this.initWithSpriteFrame(frame);
 		return this;
 	},
@@ -12,6 +23,7 @@ var JCSprite = cc.Sprite.extend({
 		var frame;
 		//loop through the frames using the nameFormat and init the animation
 		for (var i = 0; i < entry.frames; i++) {
+			//todo implement sprintf style formatter
 			str = "stance0" + i + ".png";
 			frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(str);
 			animFrames.push(frame);			
@@ -20,7 +32,7 @@ var JCSprite = cc.Sprite.extend({
 		var animation = cc.Animation.create(animFrames, entry.delay);		
 
 		//if the entry type is a loop create a forver action
-		if (entry.type == AnimationTypeLoop){
+		if (entry.type == jc.AnimationTypeLoop){
  			var action = cc.RepeatForever.create(cc.Animate.create(animation));
 			action.tag = entry.state;
 			entry.action = action;
@@ -49,7 +61,7 @@ var JCSprite = cc.Sprite.extend({
 		}
 		
 		//if a callback wasn't supplied, set callback to the internal moveEnded
-		if !(callback){
+		if (!callback){
 			callback = this.moveEnded;
 		}
 		
@@ -63,13 +75,13 @@ var JCSprite = cc.Sprite.extend({
 	moveEnded: function(){
 		this.setState(this.idle);
 		this.stopAction(this.currentMove);		
-	}
+	},
 	animationDone:function(){
 		this.setState(this.nextState);
 	},
 	setState:function(state){
 		var currentState = this.state;
-		this.state = state.toString();
+		this.state = state;
 		var startMe = this.animations[this.state];
 		var stopMe = this.animations[currentState];
 		if (startMe && stopMe){
@@ -79,5 +91,18 @@ var JCSprite = cc.Sprite.extend({
 		}else{
 			throw "Couldn't set state. What is: " + state;			
 		}
+	},
+	centerOn:function(point, xmax, ymax, xmin, ymin){
+		var size = cc.Director.getInstance().getWinSize();;
+	    var x = Math.max(point.x, xmax);
+	    var y = Math.max(point.y, ymax);
+	    x = Math.min(x, xmin);
+		y = Math.min(y, ymin);
+		var actualPosition = cc.p(x,y);
+		var centerOfView = cc.p(size.width, size.height);
+		var viewPoint = cc.pSub(centerOfView, actualPosition);
+		this.setPosition(viewPoint);
+		
+				
 	}
 });
