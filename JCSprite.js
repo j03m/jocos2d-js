@@ -1,7 +1,5 @@
 //REQUIRES: https://github.com/alexei/sprintf.js
 
-var jc = jc || {};
-
 jc.AnimationTypeOnce=0;
 jc.AnimationTypeLoop=1;  
 

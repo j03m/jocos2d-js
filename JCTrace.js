@@ -1,4 +1,4 @@
-var jc = jc || {};
+var jc = {};
 var tracers = {
 	'general':0,
 	'touch':0,
@@ -8,7 +8,8 @@ var tracers = {
 	'sprite':0,
     'move':0,
     'updatetime':1,
-	'memory':1
+	'memory':1,
+	'tests':1
 };
 
 jc.log = function(categories, msg){
@@ -16,6 +17,11 @@ jc.log = function(categories, msg){
 		if (tracers[categories[i]]!=1){
 			return;
 		}
-	}	
-	cc.log(msg);	
+	}
+	if (typeof msg == 'string' || msg instanceof String){
+		cc.log(msg);			
+	}else{
+		cc.log(JSON.stringify(msg));
+	}
+
 };
