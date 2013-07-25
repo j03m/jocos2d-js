@@ -2,14 +2,15 @@ var jc = {};
 var tracers = {
 	'general':0,
 	'touch':0,
-    'touchcore':1,
-	'mouse':1,
+    'touchcore':0,
+	'mouse':0,
 	'states':0,
 	'sprite':0,
     'move':0,
-    'updatetime':1,
-	'memory':1,
-	'tests':1
+    'updatetime':0,
+	'memory':0,
+	'tests':1,
+	'requestManager':1
 };
 
 jc.log = function(categories, msg){

@@ -4,7 +4,8 @@ function ajax(cfg)
     url = cfg.url,
     method = cfg.method || 'GET',
     success = cfg.success || function () {},
-    failure = cfg.failure || function () {};
+    failure = cfg.failure || function () {},
+	data = cfg.data || {};
     
     try {
         xhr = new XMLHttpRequest();
@@ -13,17 +14,19 @@ function ajax(cfg)
         //xhr = new ActiveXObject("Msxml2.XMLHTTP");
     }
     
-    xhr.onreadystatechange = function ()
+    xhr.onreadystatechange = function (req)
     {
-        if (xhr.readyState == 4) {
-            if (xhr.status == 200) {
-                success.call(null, xhr);
-            } else {
-                failure.call(null, xhr);
-            }
-        }
-    }
+        return function(){
+			if (xhr.readyState == 4) {
+	            if (xhr.status == 200) {
+	                success(req, {'status':xhr.status,'response':xhr.responseText});
+	            } else {
+	                failure(req, {'status':xhr.status,'response':xhr.responseText});
+	            }
+	        }	
+		}
+    }(cfg)
     
     xhr.open(method, url);
-    xhr.send(null);
+    xhr.send(data);
 }

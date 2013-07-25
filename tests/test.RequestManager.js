@@ -1,32 +1,87 @@
-var eventTest = {
-	'test--emit an event':function() {
+
+var eventTest = _.extend({
+    'name':'emit an event',
+	'test--':function() {
 		jc.log(['tests'],"test--emit an event running");
 		var manager = jc.RequestManager.getInstance();
-		manager.on('data', this['validate']);
+		manager.on('data', this['validateAsync'].bind(this));
 		manager.emit('data', {
 			'hi': 'hi'
 		});
 	},
-	'validate': function(someData) {
+	'validateAsync': function(someData) {
 		jc.log(['tests'],"test--emit validating");
-		TestRunner.assert(someData.hi=='hi');
+		this.assert(someData.hi=='hi');
+		this.emit('validate',null);
 	}
-}
+}, new TestRunner());
 
-var diskTest = {
-	'test--queue a request verify it gets to disk': function(){
-		jc.log(['tests'], sys);
-		jc.log(['tests'], sys.localStorage);
+var diskTest = _.extend({
+    'name':'verify that storage works',
+	'test--': function(){
+		var obj = {
+			a:1,
+			b:2,
+			c:"hi",
+			d:{
+				a:1,
+				c:"hi"
+			}
+		};
+		sys.localStorage.setItem('gq', JSON.stringify(obj));
+	},
+	'validate': function(someData){
+		var raw = sys.localStorage.getItem('gq');
+		var obj = JSON.parse(raw);
+		this.assert(obj.a == 1);
+		this.assert(obj.b == 2);
+		this.assert(obj.c == "hi");
+		this.assert(obj.d.a == 1);
+		this.assert(obj.d.a == 1);
+		this.assert(obj.d.c == "hi");						
 	}
-}
+}, new TestRunner);
 
+var requestQueueSerializationTest = _.extend({
+    'name':'verify that when I queue game stuff they end up on disk',
+	'test--':function(){
+		var manager = jc.RequestManager.getInstance();	
+		manager.queueGameRequest({
+			'url':'http://localhost:1337/index.html',
+			'data':{
+				'randomstuff':'stuff'
+			}
+		});
+	},
+	'validate':function(someData){
+		var raw = sys.localStorage.getItem('gq');		
+	}
+}, new TestRunner());
+
+var requestStartedEvent = _.extend({
+	'name':'verify that I can send an http request and I will get an event stating it started',
+	'test--':function(){
+		//todo:
+		//Left off here, writing tests to verify that the request manager fires events correctly
+		//write tests to verify that the request manager sends and receives data to/from server coms.
+		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestStarted, this.validateAsync);
+		jc.RequestManager.queueGameRequest({
+			url:'http://localhost:1337/index.html',		
+		    method:'GET'
+		});
+	},
+	'validateAsync':function(req){
+		this.assert(req.url == 'http://localhost:1337/index.html');
+		this.assert(req.method == 'GET');
+		this.emit('validate',null);
+		
+	}
+}, new TestRunner());
 
 var RequestManagerTestLayer = cc.Layer.extend({	
 	init: function() {
 		if (this._super()) {
-			TestRunner.run(eventTest);	
-			TestRunner.run(diskTest);		
-			// console.log(TestRunner);
+			TestRunner.run([eventTest, diskTest, requestQueueSerializationTest]);	
 			return true;
 		} else {
 			return false;
