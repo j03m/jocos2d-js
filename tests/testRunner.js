@@ -21,9 +21,13 @@ TestRunner.run = function(tests, done){
 					test.validate();
 					TestRunner.count++;
 				}else{
-					test.on('validate', function(){
-						TestRunner.count++;
-					});
+
+					test.on('validate', function(name) { 
+						return function(){
+									jc.log(['tests'], "Validating: " + name);
+									TestRunner.count++;
+						}
+					}(test.name));
 					test[pro](test);
 				}
 			}
@@ -42,7 +46,7 @@ TestRunner.worker = function(){
 
 TestRunner.prototype.assert = function(theCase){
 	if (!theCase){
-		throw this.name + " assert case failed. Info:" + JSON.stringify(this.getCallerInfo(), null, 4) ;
+		throw "TEST FAILED!!!! - " + this.name + "  - assert case failed. Info:" + JSON.stringify(this.getCallerInfo(), null, 4) ;
 	}
 }
 

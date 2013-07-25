@@ -125,10 +125,10 @@ RequestManager.getInstance = function(){
     if (!this._instance) {
 		this._instance=new RequestManager();
 		_.extend(this._instance, new jc.EventEmitter2({
-		      						 wildcard: false,
-		      						 newListener: false,
-		      						 maxListeners: 1,
-		    					 }));
+			      						 wildcard: false,
+			      						 newListener: false
+			    					 }));
+		
     }
     return this._instance;
 }

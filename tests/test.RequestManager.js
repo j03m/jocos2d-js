@@ -47,7 +47,8 @@ var requestQueueSerializationTest = _.extend({
 	'test--':function(){
 		var manager = jc.RequestManager.getInstance();	
 		manager.queueGameRequest({
-			'url':'http://localhost:1337/index.html',
+			'url':'http://localhost:1337/tests.html',
+			'method':'GET',
 			'data':{
 				'randomstuff':'stuff'
 			}
@@ -61,27 +62,99 @@ var requestQueueSerializationTest = _.extend({
 var requestStartedEvent = _.extend({
 	'name':'verify that I can send an http request and I will get an event stating it started',
 	'test--':function(){
-		//todo:
-		//Left off here, writing tests to verify that the request manager fires events correctly
-		//write tests to verify that the request manager sends and receives data to/from server coms.
-		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestStarted, this.validateAsync);
-		jc.RequestManager.queueGameRequest({
-			url:'http://localhost:1337/index.html',		
+		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestStarted, this.validateAsync.bind(this));
+		jc.RequestManager.getInstance().queueGameRequest({
+			id:'requestStartedEvent',
+			url:'http://localhost:1337/tests.js',		
 		    method:'GET'
 		});
 	},
 	'validateAsync':function(req){
-		this.assert(req.url == 'http://localhost:1337/index.html');
-		this.assert(req.method == 'GET');
-		this.emit('validate',null);
-		
+		if (req.id == 'requestStartedEvent'){
+			this.assert(req.url == 'http://localhost:1337/tests.js');
+			this.assert(req.method == 'GET');
+			this.emit('validate',null);			
+		}		
+	}
+}, new TestRunner());
+
+var requestSuccessEvent = _.extend({
+	'name':'verify that I can send an http request and I will get an event stating it completed',
+	'test--':function(){
+		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestSuccess, this.validateAsync.bind(this));
+		jc.RequestManager.getInstance().queueGameRequest({
+			id: 'requestSuccessEvent',
+			url:'http://localhost:1337/index.html',		
+		    method:'GET'
+		});
+	},
+	'validateAsync':function(answer){
+		if (answer.req.id == 'requestSuccessEvent'){ //otherwise this isn't our request, ignore
+			this.assert(answer.req.url == 'http://localhost:1337/index.html');
+			this.assert(answer.req.method == 'GET');
+			this.assert(answer.res.response != undefined);
+			this.assert(answer.res.status == 200);
+			this.emit('validate',null);					
+		}
+	}
+}, new TestRunner());
+
+//todo: get async working up in this bizitch
+var xmlHttpTest = _.extend({
+	'name':'verify that I can send multiple http requests',
+	'test--':function(){
+		var done=0;
+		ajax({
+			method:'GET',
+			url:'http://localhost:1337/index.html',
+			success:function(){
+				done++
+				if (done>=3){
+					this.emit('validate', null);
+				}
+			}.bind(this),
+			failure:function(){
+				this.assert(false);
+			}.bind(this)			
+		});
+		ajax({
+			method:'GET',
+			url:'http://localhost:1337/index.html',
+			success:function(){
+				done++
+				if (done>=3){
+					this.emit('validate', null);
+				}
+			}.bind(this),
+			failure:function(){
+				this.assert(false);
+			}.bind(this)			
+		});
+		ajax({
+			method:'GET',
+			url:'http://localhost:1337/index.html',
+			success:function(){
+				done++
+				if (done>=3){
+					this.emit('validate', null);
+				}
+			}.bind(this),
+			failure:function(){
+				this.assert(false);
+			}.bind(this)
+			
+		});		
+	},
+	'validateAsync':function(answer){
+		this.emit('validate', null);
 	}
 }, new TestRunner());
 
 var RequestManagerTestLayer = cc.Layer.extend({	
 	init: function() {
 		if (this._super()) {
-			TestRunner.run([eventTest, diskTest, requestQueueSerializationTest]);	
+			TestRunner.run([eventTest, diskTest, requestQueueSerializationTest, requestSuccessEvent, requestStartedEvent, xmlHttpTest]);	
+			//TestRunner.run([requestStartedEvent]);	
 			return true;
 		} else {
 			return false;
