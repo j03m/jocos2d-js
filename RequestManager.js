@@ -110,7 +110,7 @@ RequestManager.prototype.success = function(req, res){
 
 RequestManager.prototype.failure = function(req, res){
 	var event;
-	jc.log(['requestManager'], 'Request success');
+	jc.log(['requestManager'], 'Request failure');
 	if (req.type == RequestManager.types.game){
 		event = RequestManager.events.GameRequestFailure;
 	}else if (req.type == RequestManager.types.res){

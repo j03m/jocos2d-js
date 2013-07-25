@@ -99,6 +99,27 @@ var requestSuccessEvent = _.extend({
 	}
 }, new TestRunner());
 
+
+var requestFailEvent = _.extend({
+	'name':'verify that I can send an http request and I will get an event stating it completed if it fails',
+	'test--':function(){
+		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestFailure, this.validateAsync.bind(this));
+		jc.RequestManager.getInstance().queueGameRequest({
+			id: 'requestFailEvent',
+			url:'http://localhost:1337/index1.html', //doesn't exist		
+		    method:'GET'
+		});
+	},
+	'validateAsync':function(answer){
+		if (answer.req.id == 'requestFailEvent'){ //otherwise this isn't our request, ignore
+			this.assert(answer.req.url == 'http://localhost:1337/index1.html');
+			this.assert(answer.req.method == 'GET');
+			this.assert(answer.res.status == 404);
+			this.emit('validate',null);					
+		}
+	}
+}, new TestRunner());
+
 //todo: get async working up in this bizitch
 var xmlHttpTest = _.extend({
 	'name':'verify that I can send multiple http requests',
@@ -153,7 +174,7 @@ var xmlHttpTest = _.extend({
 var RequestManagerTestLayer = cc.Layer.extend({	
 	init: function() {
 		if (this._super()) {
-			TestRunner.run([eventTest, diskTest, requestQueueSerializationTest, requestSuccessEvent, requestStartedEvent, xmlHttpTest]);	
+			TestRunner.run([eventTest, diskTest, requestQueueSerializationTest, requestSuccessEvent, requestStartedEvent, xmlHttpTest,requestFailEvent]);	
 			//TestRunner.run([requestStartedEvent]);	
 			return true;
 		} else {
@@ -178,11 +199,3 @@ RequestManagerTestLayer.scene = function() {
 	scene.addChild(layer);
 	return scene;
 };
-
-
-
-
-
-
-
-
