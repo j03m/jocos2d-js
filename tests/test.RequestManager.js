@@ -1,10 +1,9 @@
-
 var eventTest = _.extend({
     'name':'emit an event',
 	'test--':function() {
 		jc.log(['tests'],"test--emit an event running");
 		var manager = jc.RequestManager.getInstance();
-		manager.on('data', this['validateAsync'].bind(this));
+		manager.once('data', this['validateAsync'].bind(this));
 		manager.emit('data', {
 			'hi': 'hi'
 		});
@@ -62,7 +61,7 @@ var requestQueueSerializationTest = _.extend({
 var requestStartedEvent = _.extend({
 	'name':'verify that I can send an http request and I will get an event stating it started',
 	'test--':function(){
-		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestStarted, this.validateAsync.bind(this));
+		jc.RequestManager.getInstance().once(jc.RequestManager.events.GameRequestStarted, this.validateAsync.bind(this));
 		jc.RequestManager.getInstance().queueGameRequest({
 			id:'requestStartedEvent',
 			url:'http://localhost:1337/tests.js',		
@@ -81,7 +80,7 @@ var requestStartedEvent = _.extend({
 var requestSuccessEvent = _.extend({
 	'name':'verify that I can send an http request and I will get an event stating it completed',
 	'test--':function(){
-		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestSuccess, this.validateAsync.bind(this));
+		jc.RequestManager.getInstance().once(jc.RequestManager.events.GameRequestSuccess, this.validateAsync.bind(this));
 		jc.RequestManager.getInstance().queueGameRequest({
 			id: 'requestSuccessEvent',
 			url:'http://localhost:1337/index.html',		
@@ -103,7 +102,7 @@ var requestSuccessEvent = _.extend({
 var requestFailEvent = _.extend({
 	'name':'verify that I can send an http request and I will get an event stating it completed if it fails',
 	'test--':function(){
-		jc.RequestManager.getInstance().on(jc.RequestManager.events.GameRequestFailure, this.validateAsync.bind(this));
+		jc.RequestManager.getInstance().once(jc.RequestManager.events.GameRequestFailure, this.validateAsync.bind(this));
 		jc.RequestManager.getInstance().queueGameRequest({
 			id: 'requestFailEvent',
 			url:'http://localhost:1337/index1.html', //doesn't exist		
@@ -171,31 +170,5 @@ var xmlHttpTest = _.extend({
 	}
 }, new TestRunner());
 
-var RequestManagerTestLayer = cc.Layer.extend({	
-	init: function() {
-		if (this._super()) {
-			TestRunner.run([eventTest, diskTest, requestQueueSerializationTest, requestSuccessEvent, requestStartedEvent, xmlHttpTest,requestFailEvent]);	
-			//TestRunner.run([requestStartedEvent]);	
-			return true;
-		} else {
-			return false;
-		}
-	},
-});
 
-RequestManagerTestLayer.create = function() {
-	var ml = new RequestManagerTestLayer();
-	if (ml && ml.init()) {
-		return ml;
-	} else {
-		throw "Couldn't create the RequestManagerTestLayer. Something is wrong.";
-	}
-	return null;
-};
-
-RequestManagerTestLayer.scene = function() {
-	var scene = cc.Scene.create();
-	var layer = RequestManagerTestLayer.create();
-	scene.addChild(layer);
-	return scene;
-};
+TestRunner.addTests([eventTest, xmlHttpTest, requestFailEvent, requestSuccessEvent, requestStartedEvent, requestQueueSerializationTest, diskTest, eventTest]);

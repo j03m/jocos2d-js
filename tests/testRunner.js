@@ -6,8 +6,19 @@ var TestRunner = function(){
 	    					 }));
 }
 
+TestRunner.addTests = function(tests){
+	if (TestRunner.toRun == undefined){
+		TestRunner.toRun = [];
+	}
+	
+	TestRunner.toRun = TestRunner.toRun.concat(tests);
+}
 
-TestRunner.run = function(tests, done){
+TestRunner.runAll = function(){
+	TestRunner.run(TestRunner.toRun);
+}
+
+TestRunner.run = function(tests){
 	TestRunner.count = 0;
 	TestRunner.pending = tests.length;
 	for (var i=0;i<tests.length;i++){
