@@ -9,8 +9,9 @@ var tracers = {
     'move':0,
     'updatetime':0,
 	'memory':0,
-	'tests':1,
-	'requestManager':1
+	'tests':0,
+	'requestManager':0,
+    'gameplay':0
 };
 
 jc.log = function(categories, msg){

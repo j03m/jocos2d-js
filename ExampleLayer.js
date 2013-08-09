@@ -2,7 +2,7 @@ var Consts = {};
 Consts.stateIdle=0;
 Consts.stateWalking=1;
 Consts.statePunching=2;
-var MainLayer = cc.Layer.extend({
+var ExampleLayer = cc.Layer.extend({
 	ryu: null,
 	ryuBatch: null,
 	wizardBatch: null,
@@ -339,8 +339,8 @@ var MainLayer = cc.Layer.extend({
 
 });
 
-MainLayer.create = function() {
-	var ml = new MainLayer();
+ExampleLayer.create = function() {
+	var ml = new ExampleLayer();
 	if (ml && ml.init()) {
 		return ml;
 	} else {
@@ -349,9 +349,9 @@ MainLayer.create = function() {
 	return null;
 };
 
-MainLayer.scene = function() {
+ExampleLayer.scene = function() {
 	var scene = cc.Scene.create();
-	var layer = MainLayer.create();
+	var layer = ExampleLayer.create();
 	scene.addChild(layer);
 	return scene;
 };

@@ -1,7 +1,7 @@
 //REQUIRES: https://github.com/alexei/sprintf.js
 
-jc.AnimationTypeOnce=0;
-jc.AnimationTypeLoop=1;  
+jc.AnimationTypeOnce=1;
+jc.AnimationTypeLoop=0;
 
 if (!String.prototype.format) {
   String.prototype.format = function() {
@@ -16,6 +16,7 @@ if (!String.prototype.format) {
 }
   
 jc.Sprite = cc.Sprite.extend({
+    layer:undefined, //parent reference
 	initWithPlist: function(plist, sheet, firstFrame, name) {
 		this.animations = [];
 		this.batch = null;
@@ -42,7 +43,20 @@ jc.Sprite = cc.Sprite.extend({
 		}
 	},
 	addDef: function(entry) {
-		var action = this.makeAction(entry);
+		if (entry.nameFormat==undefined){
+            throw "Nameformat is required in a sprite definition.";
+        }
+        if (entry.state==undefined){
+            throw "State is required in a sprite definition.";
+        }
+        if (entry.type==undefined){
+            throw "Animation type 'type' is required in a sprite definition.";
+        }
+        if (entry.delay==undefined){
+            throw "Animation delay 'delay' is required in a sprite definition.";
+        }
+
+        var action = this.makeAction(entry);
         action.retain();
 		entry.action = action;
 		this.animations[entry.state] = entry;				
@@ -51,8 +65,20 @@ jc.Sprite = cc.Sprite.extend({
 		var animFrames = [];
 		var str = "";
 		var frame;
+		var start = entry.start;
+        var end = entry.end;
+        if (start == undefined){
+            start = 0;
+        }
+        if (end == undefined){
+            if (entry.frames == undefined){
+                throw "You must provide either an end range or a number of frames when creating an entry.";
+            }
+            end = entry.frames-1;
+        }
+
 		//loop through the frames using the nameFormat and init the animation
-		for (var i = 0; i < entry.frames; i++) {
+        for (var i = start; i <= end; i++) {
 			str = entry.nameFormat.format(i); 
 			frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(str);
 			if (!frame){
@@ -146,5 +172,68 @@ jc.Sprite = cc.Sprite.extend({
             jc.log(['sprite', 'state'],"Starting action.")
             this.runAction(startMe.action);
 		}
-	}
+	},
+	centerOnScreen:function(){
+		var size = cc.Director.getInstance().getWinSize();
+		var x = size.width/2;
+		var y = size.height/2;
+		this.setPosition(cc.p(x,y));		
+	},
+    setBehavior: function(behavior){
+        var behaviorClass = BehaviorMap[behavior];
+        if (!behaviorClass){
+            throw 'Unrecognized behavior name: ' + behavior;
+        }
+
+        this.behavior = new behaviorClass(this);
+    },
+    think:function(dt){
+        this.behavior.think(dt);
+    }
 });
+
+jc.Sprite.spriteGenerator = function(allDefs, def, png, plist){
+
+
+    var character = allDefs[def];
+    var sprite = new jc.Sprite();
+
+    var nameFormat = character.name + ".{0}.png";
+    if (character.inherit){
+        //find who we inherit from, copy everything that doesn't exist over.
+        var parent = allDefs[character.inherit];
+        for (var prop in parent){
+            if (character[prop]==undefined){
+                character[prop] = parent[prop];
+            }
+        }
+    }
+
+    if (character['animations']== undefined){
+        throw def + " has a malformed configation. Animation property missing.";
+    }
+
+    var firstFrame = character.animations['idle'].start;
+    sprite.initWithPlist(plist, png, nameFormat.format(firstFrame), character.name);
+
+    for (var animation in character.animations){
+        //use this to create a definition in the sprite
+        character.animations[animation].nameFormat = nameFormat; //jack this in.
+        character.animations[animation].state = animation;
+        sprite.addDef(character.animations[animation]);
+        if (animation == 'idle'){
+            sprite.idle = animation;
+        }
+        if (animation == 'walk'){
+            sprite.moving = animation;
+        }
+        if (animation == 'fly'){
+            sprite.moving = animation;
+        }
+    }
+    return sprite;
+}
+
+jc.randomNum= function(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
