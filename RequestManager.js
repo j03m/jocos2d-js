@@ -1,3 +1,4 @@
+var jc = jc || {};
 var RequestManager = function(){
 	this.gameQueue = [];
 	this.resourceQueue = [];
@@ -132,7 +133,7 @@ RequestManager.getInstance = function(){
     }
     return this._instance;
 }
-var jc = jc || {};
+
 jc.RequestManager = RequestManager;
 
 

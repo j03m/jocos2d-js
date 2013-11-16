@@ -1,8 +1,11 @@
-var jc = {};
+
+var jc = jc || {};
 var tracers = {
 	'general':0,
 	'touch':0,
     'touchcore':0,
+    'touchid':0,
+    'touchout':1,
 	'mouse':0,
 	'states':0,
 	'sprite':0,
@@ -21,9 +24,20 @@ jc.log = function(categories, msg){
 		}
 	}
 	if (typeof msg == 'string' || msg instanceof String){
-		cc.log(msg);			
+		cc.log(JSON.stringify(categories) + ': ' + msg);
 	}else{
-		cc.log(JSON.stringify(msg));
+		cc.log(JSON.stringify(categories) + ': ' + JSON.stringify(msg));
 	}
 
 };
+
+jc.clone = function (obj){
+    if(obj == null || typeof(obj) != 'object')
+        return obj;
+
+    var temp = obj.constructor(); // changed
+
+    for(var key in obj)
+        temp[key] = jc.clone(obj[key]);
+    return temp;
+}
