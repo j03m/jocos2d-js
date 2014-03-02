@@ -1,6 +1,6 @@
 var jc = jc || {};
 jc.CompositeButton = cc.Sprite.extend({
-    initWithDefinition:function(def, onTouch){
+    initWithDefinition:function(def, onTouch, onPress){
         if (!def){
             throw "Must supply a definition";
         }
@@ -8,10 +8,11 @@ jc.CompositeButton = cc.Sprite.extend({
             throw "Must supply main button state.";
         }
         if (!def.pressed){
-            throw "Must supply pressed button state.";
+            def.pressed = def.main;
         }
         this.def = def;
         this.onTouch = onTouch;
+        this.onPress = onPress;
         this.initWithSpriteFrameName(def.main);
         if (this.def.subs){
             for(var i=0; i<def.subs.length;i++){
@@ -29,24 +30,32 @@ jc.CompositeButton = cc.Sprite.extend({
         }
         this.scheduleUpdate();
     },
+	setData:function(data){
+		this.data = data;
+	},
     onEnter: function(){
         if ('mouse' in sys.capabilities) {
-            cc.Director.getInstance().getMouseDispatcher().addMouseDelegate(this, 0);
+            cc.Director.getInstance().getMouseDispatcher().addMouseDelegate(this, jc.touchPriorityButton);
         } else {
-            cc.Director.getInstance().getTouchDispatcher().addTargetedDelegate(this, 0, true);
+            cc.registerTargetedDelegate(jc.touchPriorityButton, true, this);
+            //cc.Director.getInstance().getTouchDispatcher()._addTargetedDelegate(this, 0, true);
         }
     },
     onExit: function(){
         if ('mouse' in sys.capabilities) {
             cc.Director.getInstance().getMouseDispatcher().removeMouseDelegate(this);
         } else {
-            cc.Director.getInstance().getTouchDispatcher().removeDelegate(this);
+            cc.unregisterTouchDelegate(this);
+            //cc.Director.getInstance().getTouchDispatcher()._removeDelegate(this);
         }
     },
     onTouchBegan: function(touch) {
         if(this.frameCheck(touch)){
             var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(this.def.pressed);
             this.setDisplayFrame(frame);
+            if (this.onPress){
+                this.onPress(this.data);
+            }
             return true;
         }else{
             return false
@@ -84,7 +93,7 @@ jc.CompositeButton = cc.Sprite.extend({
             var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(this.def.main);
             this.setDisplayFrame(frame);
             if (this.onTouch && !this.paused){
-                this.onTouch();
+                this.onTouch(this.data);
             }
             return true;
         }else{

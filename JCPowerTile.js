@@ -7,8 +7,7 @@ jc.PowerTile = jc.CompositeButton.extend({
         var cs = this.getContentSize();
         this.setScale(this.tileSize.width/cs.width, this.tileSize.height/cs.height);
 
-        this.border = new cc.Sprite();
-        this.border.initWithSpriteFrameName("Border5.png");
+        this.border = jc.makeSimpleSprite("powerFrame.png");
         this.addChild(this.border, 10);
         this.border.setPosition(this.borderPos); //wtf is wrong with cocos positioning
 
@@ -31,13 +30,13 @@ jc.PowerTile = jc.CompositeButton.extend({
     },
     setSelected:function(){
         //apply the touched border sprite
-        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame("Border3.png");
+        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame("powerFrameSelected.png");
         this.border.setDisplayFrame(frame);
 
     },
     setUnselected:function(){
         //apply the touched border sprite
-        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame("Border5.png");
+        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame("powerFrame.png");
         this.border.setDisplayFrame(frame);
     },
     onTouch:function(){

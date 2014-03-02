@@ -1,13 +1,14 @@
 var jc = jc || {};
 
 jc.UiConf = {};
-jc.UiConf.frame19Rect = cc.RectMake(34,34,167,206);
-jc.UiConf.frame20Rect = cc.RectMake(25,25,125,150);
+jc.woodRect = cc.rect(220,220,293,293);
+jc.topMost = 10000;
+
 
 jc.UiElementsLayer = jc.TouchLayer.extend({
     windowConfig:{
         "window":{
-            "cell":8,
+
             "type":"scale9",
             "anchor":['top'],
             "transitionIn":"top",
@@ -66,6 +67,117 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             }
         }
     },
+    blackBoxElement:function(elementName){
+        var size = this[elementName].getContentSize();
+		this.blackBox(size);
+	},
+	blackBoxScene:function(){
+        var inSize = jc.designSize;
+        var width=inSize.width*jc.assetScaleFactor;
+        var height=inSize.height*jc.assetScaleFactor;
+        var size = cc.size(width,height);
+        var verticalBarThickness= (this.winSize.width - size.width)/2;
+        var horizontalBarThickness = (this.winSize.height - size.height)/2;
+        this.leftBar = cc.DrawNode.create();
+        this.rightBar = cc.DrawNode.create();
+        this.topBar = cc.DrawNode.create();
+        this.bottomBar = cc.DrawNode.create();
+
+        this.getParent().addChild(this.leftBar);
+        this.getParent().addChild(this.rightBar);
+        this.getParent().addChild(this.topBar);
+        this.getParent().addChild(this.bottomBar);
+
+        var color = cc.c4f(0,0,0,1);
+        var border = cc.c4f(0, 0, 0 , 1);
+        this.leftBar.clear();
+        this.rightBar.clear();
+        this.topBar.clear();
+        this.topBar.clear();
+        this.leftBar.setPosition(cc.p(0,0));
+        var rbPos = cc.p(this.winSize.width - verticalBarThickness,0);
+        this.rightBar.setPosition(rbPos);
+        var tbPos = cc.p(0,this.winSize.height - horizontalBarThickness);
+        this.topBar.setPosition(tbPos);
+        this.bottomBar.setPosition(cc.p(0,0));
+
+        this.drawRect(this.leftBar, cc.rect(0,0,verticalBarThickness,this.winSize.height) , cc.black(), border,1);
+        this.drawRect(this.rightBar, cc.rect(rbPos.x,rbPos.y,verticalBarThickness,this.winSize.height) , cc.black(), border,1);
+        this.drawRect(this.topBar, cc.rect(tbPos.x,tbPos.y,this.winSize.width,horizontalBarThickness) , cc.black(), border,1);
+        this.drawRect(this.bottomBar, cc.rect(0,0,this.winSize.width,horizontalBarThickness) , cc.black(), border,1);
+
+        this.leftBar.setZOrder(jc.topMost);
+        this.rightBar.setZOrder(jc.topMost);
+        this.topBar.setZOrder(jc.topMost);
+        this.bottomBar.setZOrder(jc.topMost);
+    },
+    blackBox:function(inSize){
+		var width=inSize.width*jc.assetScaleFactor;
+		var height=inSize.height*jc.assetScaleFactor;
+		var size = cc.size(width,height);
+        var verticalBarThickness= (this.winSize.width - size.width)/2;
+		var horizontalBarThickness = (this.winSize.height - size.height)/2;
+        this.leftBar = cc.DrawNode.create();
+        this.rightBar = cc.DrawNode.create();
+        this.topBar = cc.DrawNode.create();
+        this.bottomBar = cc.DrawNode.create();
+
+        this.addChild(this.leftBar);
+        this.addChild(this.rightBar);
+        this.addChild(this.topBar);
+        this.addChild(this.bottomBar);
+		
+        var color = cc.c4f(0,0,0,1);
+        var border = cc.c4f(0, 0, 0 , 1);
+        this.leftBar.clear();
+        this.rightBar.clear();
+        this.topBar.clear();
+        this.topBar.clear();
+        this.leftBar.setPosition(cc.p(0,0));
+		var rbPos = cc.p(this.winSize.width - verticalBarThickness,0);
+        this.rightBar.setPosition(rbPos);
+		var tbPos = cc.p(0,this.winSize.height - horizontalBarThickness);
+        this.topBar.setPosition(tbPos);
+        this.bottomBar.setPosition(cc.p(0,0));
+
+        this.drawRect(this.leftBar, cc.rect(0,0,verticalBarThickness,this.winSize.height) , cc.black(), border,1);
+        this.drawRect(this.rightBar, cc.rect(rbPos.x,rbPos.y,verticalBarThickness,this.winSize.height) , cc.black(), border,1);
+        this.drawRect(this.topBar, cc.rect(tbPos.x,tbPos.y,this.winSize.width,horizontalBarThickness) , cc.black(), border,1);
+        this.drawRect(this.bottomBar, cc.rect(0,0,this.winSize.width,horizontalBarThickness) , cc.black(), border,1);
+
+        this.leftBar.setZOrder(jc.topMost);
+        this.rightBar.setZOrder(jc.topMost);
+        this.topBar.setZOrder(jc.topMost);
+        this.bottomBar.setZOrder(jc.topMost);
+		
+
+    },
+    flash:function(){
+        //layer color, full screen to white
+        //fade out
+
+        if (!this.whiteFlash){
+            this.whiteFlash = cc.LayerColor.create(cc.c4(255, 255, 255, 255));
+            this.whiteFlash.setContentSize(this.winSize);
+            this.getParent().addChild(this.whiteFlash);
+            this.whiteFlash.setVisible(false);
+            this.whiteFlash.setPosition(cc.p(0,0));
+
+
+        }
+
+        this.whiteFlash.setVisible(true);
+        this.whiteFlash.setOpacity(255);
+
+        jc.fadeOut(this.whiteFlash, jc.defaultTransitionTime);
+
+    },
+    drawRect:function(poly, rect, fill, border, borderWidth){
+        var height = rect.height;
+        var width = rect.width;
+        var vertices = [cc.p(0, 0), cc.p(0, height), cc.p(width, height), cc.p(width, 0)];
+        poly.drawPoly(vertices, fill, borderWidth, border);
+    },
     onTransitionComplete:function(){
         this.incTransition();
         this.checkTransitionsDone()
@@ -81,7 +193,7 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             this.transitions = 0;
             if (this.runningType == 'out'){
                 this.outTransitionsComplete();
-            }else{
+            }else{				
                 this.inTransitionsComplete();
             }
         }
@@ -94,9 +206,13 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
     },
     start: function(){
         //transition windows in
+		this.blackBox(jc.designSize);
         this.runningType = 'in';
         for(var i =0; i< this.windowConfigs.length; i++){
             var windowConfig = this.windowConfigs[i];
+            if (windowConfig.z){
+                windowConfig.window.setZOrder(windowConfig.z);
+            }
             if (windowConfig.config.transitionIn){
                 this.doTransitionIn(windowConfig,this.onTransitionComplete.bind(this));
             }else{
@@ -117,8 +233,21 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             case 'top':
                 this.slideInFromTop(windowConfig.window, windowConfig.config.transitionInTime, windowConfig.position,doneDelegate);
                 break;
+            case 'topToMid':
+                this.slideTopToMid(windowConfig.window, windowConfig.config.transitionInTime, doneDelegate);
+                break;
+            case 'leftToMid':
+                this.slideLeftToMid(windowConfig.window, windowConfig.config.transitionInTime, doneDelegate);
+                break;
+            case 'rightToMid':
+                this.slideRightToMid(windowConfig.window, windowConfig.config.transitionInTime, doneDelegate);
+                break;
             case 'bottom':
                 this.slideInFromBottom(windowConfig.window, windowConfig.config.transitionInTime, windowConfig.position,doneDelegate);
+                break;   case 'topToMid':
+                break;
+            case 'custom':
+                this[windowConfig.config.executeIn](doneDelegate);
                 break;
         }
     },
@@ -136,7 +265,28 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             case 'bottom':
                 this.slideOutToBottom(windowConfig.window, windowConfig.config.transitionOutTime, undefined,doneDelegate);
                 break;
+            case 'custom':
+                this[windowConfig.config.executeOut](doneDelegate);
+                break;
         }
+    },
+    getWindowFromConfig:function(config){
+
+            var window = this.makeWindowByType(config);
+            var kids = config.kids;
+            for(var name in kids){
+                var kid = config.kids[name];
+                var kidWindow = this.makeWindowByType(kid);
+                if (!kid.pos){
+                    kidWindow.setPosition(cc.p(0,0));
+                }else{
+                    kidWindow.setPosition(cc.p(kid.pos.x*jc.assetCategoryData.scale, kid.pos.y*jc.assetCategoryData.scale));
+                }
+				window[name] = kidWindow;
+                window.addChild(kidWindow);
+            }
+            return window;
+
     },
     initFromConfig:function(configs, parent){
         for (var configName in configs){
@@ -149,14 +299,16 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
                 parent = this;
             }
 
-            if (config.isGroup){
+            if (config.isGroup && !this.designMode){
                 this.initFromGroupConfig(configName, config, parent);
-
             }else{
-
+                if (config.isGroup){
+                    config.sprite = config.members[0].sprite;
+                }
                 var size = undefined;
                 if (config.type == "scale9"){
                     size = this.calculateSize(config, parent);
+                    jc.log(['ui'], "scale9 size:" + JSON.stringify(size));
                 }
 
                 //make it
@@ -164,10 +316,11 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
 
                 if (!size){
                     size = window.getTextureRect();
+                    jc.log(['ui'], "TextureRect size:" + JSON.stringify(size));
                 }
 
                 //what cell is it anchored to
-                var position = this.getAnchorPosition(config, size, parent);
+                var position = this.getPos(config, size, parent);
 
                 window.setPosition(cc.p(-1000,-1000));
 
@@ -183,7 +336,7 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
                 config.z = config.z | 0;
                 parent.reorderChild(window, config.z);
 
-                if (config.input){
+                if (config.input || this.designMode){
                     this.touchTargets.push(window);
                 }
 
@@ -196,31 +349,63 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
     },
     makeWindowByType:function(config, size){
         var window;
-        if (config.type == "scale9"){
-            window = this.makeWindow(size,config.sprite, config.scaleRect);
-        }else if (config.type == "sprite"){
+
+        var type = config.type;
+        var sprite = config.sprite;
+
+        if (this.designMode && type == "button"){
+            type = "sprite";
+            sprite = config.main;
+        }else if (this.designMode && type != "sprite" && type !="label" && type!="scale9"){
+            type = "sprite";
+        }
+
+        if (type == "scale9"){
+            window = this.makeWindow(size,sprite, config.rect);
+        }else if (type == "sprite"){
             window = cc.Sprite.create();
-            window.initWithSpriteFrameName(config.sprite);
+            window.initWithSpriteFrameName(sprite);
             if (config.scale){
                 window.setScaleX(config.scale/100);
                 window.setScaleY(config.scale/100);
             }
-        }else if (config.type == "button"){
+        }else if (type == "button"){
             window = new jc.CompositeButton();
-            if (!this[config.touchDelegateName]){
+            if (config.touchDelegateName != undefined && !this[config.touchDelegateName]){
                 throw "supplied:" + config.touchDelegateName + " for button click but it doesn't exist.";
             }
-            window.initWithDefinition(config,this[config.touchDelegateName].bind(this));
+
+            if (config.pressDelegateName != undefined && !this[config.pressDelegateName]){
+                throw "supplied:" + config.pressDelegateName + " for button press but it doesn't exist.";
+            }
+            var ontouch,onpress;
+            if(config.touchDelegateName){
+                ontouch = this[config.touchDelegateName].bind(this);
+            }
+            if(config.pressDelegateName){
+                onpress = this[config.pressDelegateName].bind(this);
+            }
+            window.initWithDefinition(config,ontouch, onpress);
             if (config.scale){
                 window.setScaleX(config.scale/100);
                 window.setScaleY(config.scale/100);
             }
-        }else if (config.type == "label"){
-            //var strInfo = arg[0] + "", fontName, fontSize, dimensions, hAlignment, vAlignment;
-            var lblSize = cc.size(config.width, config.height);
-            window = cc.LabelTTF.create(config.text, config.font, config.fontSize, lblSize, cc.TEXT_ALIGNMENT_LEFT);
-            window.setColor(config.color);
-        }else if (config.type == 'tile'){
+        }else if (type == "label"){
+            var fntSize, lblSize;
+            if (!this.designMode){
+                fntSize = config.fontSize*jc.assetScaleFactor;
+                lblSize = cc.size(config.width*jc.assetScaleFactor, config.height*jc.assetScaleFactor);
+            }else{
+                fntSize = config.fontSize;
+                lblSize = cc.size(config.width, config.height);
+            }
+
+            window = cc.LabelTTF.create(config.text, config.fontName, fntSize, lblSize, config.alignment);
+            if (config.color){
+                window.setColor(config.color);
+            }
+
+        }else if (type == 'tile'){
             window = new jc.PowerTile();
             window.initTile();
         }
@@ -255,6 +440,7 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             var itemHeight = size.height* config.itemSize.height/100;
             itemSize = cc.size(itemWidth, itemHeight);
             itemSizeHardSet = true;
+            jc.log(['ui'], "initGrid itemSize hard set:" + JSON.stringify(itemSize));
         }
 
         var x = -1;
@@ -262,6 +448,7 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
         var rowCount=0;
         var colCount=0;
         var initialPosition;
+
         for(var i =0;i<total;i++){
             var member;
             if (config.membersTotal){
@@ -271,40 +458,37 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             }
 
             var window = this.makeWindowByType(member, itemSize);
-            var elementSize = window.getBoundingBox().size;
+            var elementSize = window.getTextureRect();
+            jc.log(['ui'], "element itemSize from boundingBox:" + JSON.stringify(elementSize));
             if (!itemSizeHardSet){
+                jc.log(['ui'], "element itemSize not hard set, using elementSize");
                 itemSize = elementSize; //buttons and sprites set their own sizes
             }
 
             if (x==-1 && y==-1){
-                initialPosition = this.getAnchorPosition(config, itemSize, parent);
+                initialPosition = this.getPos(config, itemSize, parent);
                 x = initialPosition.x;
                 y = initialPosition.y;
-//                if (config.itemPadding){
-//                    if (config.itemPadding.all){
-//                        y-=config.itemPadding.all;
-//                        x+=config.itemPadding.all;
-//                    }else{
-//                        if (config.itemPadding.top){
-//                            y-=config.itemPadding.top;
-//                        }
-//                        if (config.itemPadding.left){
-//                            x+=config.itemPadding.left;
-//                        }
-//                    }
-//                }
+
             }else if (colCount!=0){
                 //the last pass, we moved x from the previous elements center, to where our center should be.
                 //however, this assumes we're the same size as the previous element
                 //if we are not, we'll overlap them. So here, we also need to apply some logic that moves us further if we're larger then the
                 //last element;
-                //if (lastSize.width < itemSize.width){
                     x+=itemSize.width/2;
-                //}
             }
 
             //keep track
+            jc.log(['ui'], "adding child:" + window.name);
+            if (config.z == undefined){
+                config.z = parent.getZOrder()+1;
+            }
+            jc.log(['ui'], "reordering child:" + config.z);
             parent.addChild(window);
+            if (config.z !=0){
+                this.reorderChild(window, config.z);
+            }
+
             var instanceName;
             if (!member.name){
                 instanceName = name+i;
@@ -315,18 +499,23 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             this[instanceName]=window;
 
 
-            if (config.input){
+            if (config.input || this.designMode){
                 this.touchTargets.push(window);
             }
-            if (config.itemPadding){
-                if (config.itemPadding.all){
-                    x+=config.itemPadding.all;
-                }else{
-                    if (config.itemPadding.left){
-                        x+=config.itemPadding.left;
+
+            //apply left side padding to everything but the first column of cells
+            if (colCount!=0){
+                if (config.itemPadding){
+                    if (config.itemPadding.all){
+                        x+=(config.itemPadding.all*jc.assetScaleFactor);
+                    }else{
+                        if (config.itemPadding.left){
+                            x+=(config.itemPadding.left*jc.assetScaleFactor);
+                        }
                     }
                 }
             }
+
             var gridPos = cc.p(x,y);
 
             if (member.type == 'label'){
@@ -344,10 +533,10 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
                 y-=itemSize.height;
                 if (config.itemPadding){
                     if (config.itemPadding.all){
-                        y-=config.itemPadding.all;
+                        y-=(config.itemPadding.all*jc.assetScaleFactor);
                     }else{
                         if (config.itemPadding.top){
-                            y-=config.itemPadding.top;
+                            y-=(config.itemPadding.top*jc.assetScaleFactor);
                         }
                     }
                 }
@@ -365,88 +554,52 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
         var size = parent.getContentSize();
 
         if (!config.size){
-            throw "Size must be specified.";
+            config.size = size;
         }
 
-        //width height expressed as percentage of parent
-        var w = config.size.width/100 * size.width;
-        var h = config.size.height/100 * size.height;
-
-        if(config.padding){
-            if (config.padding.all!=undefined){
-                w -= config.padding.all;
-                h -= config.padding.all;
-
-            }else{
-                if (config.padding.right){
-                    w -= config.padding.right;
-                }
-                if (config.padding.bottom){
-                    h -= config.padding.bottom;
-                }
-            };
+        if (!this.designMode){
+            config.size.width *= jc.assetScaleFactor;
+            config.size.height *=jc.assetScaleFactor;
+            if (config.size.width>jc.actualSize.width){
+                config.size.width=jc.actualSize.width;
+            }
+            if (config.size.height>jc.actualSize.height){
+                config.size.height=jc.actualSize.height;
+            }
         }
-        return cc.size(w,h);
+
+        return config.size;
     },
-    getAnchorPosition:function(config, size, parent){
-        if (!config.cell){
-            throw "Need a cell";
+    getPos:function(config, size, parent){
+        if (!config){
+            throw "Need a config!";
         }
-        if (!config.anchor){
-            config.anchor=[];
+
+        var x,y;
+        if (config.pos){
+            x = config.pos.x;
+            y = config.pos.y;
+        }else{
+            x =this.winSize.width/2;
+            y =this.winSize.height/2;
         }
-        var top;
-        var left;
-        var bottom;
-        var right;
-        var center;
-        var parentSize = parent.getContentSize();
-        var row = this.getRow(config.cell);
-        var col = this.getCol(config.cell)
-        var cellWidth = parentSize.width/3;
-        var cellHeight = parentSize.height/3;
-        var x= (cellWidth*col) + cellWidth/2;
-        var y= (cellHeight*row) + cellHeight/2;
-        for(var i =0; i<config.anchor.length; i++){
-            var value = config.anchor[i];
-            switch(value){
-                case "top":
-                    y+=cellHeight/2;
-                    y-=size.height/2;
-                    break;
-                case "left":
-                    x-=cellWidth/2;
-                    x+=size.width/2
-                    break;
-                case "right":
-                    x+=cellWidth/2;
-                    x-=size.width/2;
-                    break;
-                case "bottom":
-                    y-=cellWidth/2;
-                    y+=size.height/2
-                    break;
-                case "center":
-                    //default, do nothing;
-                    break;
+
+
+        if (!this.designMode && config.pos){
+            //if we are not in designmode, translate cooridinates based on our adjusted scale
+            x*=jc.assetScaleFactor;
+            y*=jc.assetScaleFactor;
+        }
+
+
+        if (config.applyAdjustments){
+            if (jc.assetCategoryData.adjustx){
+                x+= jc.assetCategoryData.adjustx;
+            }
+            if(jc.assetCategoryData.adjusty){
+                y+= jc.assetCategoryData.adjusty;
             }
         }
-
-        if(config.padding){
-            if (config.padding.all!=undefined){
-                x+= config.padding.all;
-                y+= config.padding.all;
-
-            }else{
-                if (config.padding.left){
-                    x+= config.padding.left;
-                }
-                if (config.padding.top){
-                    y-= config.padding.top;
-                }
-            }
-        }
-
 
         return cc.p(x,y);
     },
@@ -473,20 +626,6 @@ jc.UiElementsLayer = jc.TouchLayer.extend({
             return 2;
         }
         throw "Cell must be 1-9";
-    },
-    centerThis:function(centerMe, centerOn){
-        var pos = this.getAnchorPosition({"cell":5}, centerMe, centerOn);
-        centerMe.setPosition(pos);
-    },
-    centerThisPeer:function(centerMe, centerOn){
-        centerMe.setPosition(centerOn.getPosition());
-    },
-    scaleTo:function(scaleMe, toMe){
-        var currentSize = scaleMe.getContentSize();
-        var toSize = toMe.getContentSize();
-        var scalex = toSize.width/currentSize.width;
-        var scaley = toSize.height/currentSize.height;
-        scaleMe.setScale(scalex, scaley);
     }
 
 });

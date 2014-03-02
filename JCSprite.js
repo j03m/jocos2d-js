@@ -28,19 +28,54 @@ jc.Sprite = cc.Sprite.extend({
 		this.idle = 0;
 		this.name = config.name;
         this.baseOffset = config.baseOffset;
-		cc.SpriteFrameCache.getInstance().addSpriteFrames(plist);
-		this.batch = cc.SpriteBatchNode.create(sheet);
-        this.batch.retain();
-        this.effects = {};
-        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(firstFrame);
 
+
+        if (jc.config.batch){
+            jc.log(['batching'], 'in sprite creation');
+            if (!jc.spriteBatch){
+                jc.log(['batching'], 'jc batches not defined, defining');
+                jc.spriteBatch = {};
+            }
+
+            if (!jc.spriteBatch[sheet]){
+                jc.log(['batching'], 'Sheet: ' + sheet + ' not batched, creating');
+                jc.spriteBatch[sheet] = cc.SpriteBatchNode.create(sheet);
+                jc.spriteBatch[sheet].sheet = sheet;
+                jc.spriteBatch[sheet].retain();
+            }
+
+            this.batch = jc.spriteBatch[sheet];
+        }
+
+        if (plist instanceof Array){
+            _.each(plist, function(plistitem){
+                cc.SpriteFrameCache.getInstance().addSpriteFrames(plistitem);
+                jc.parsed[plistitem] = true;
+            });
+        }else if (!jc.parsed[plist]){
+            cc.SpriteFrameCache.getInstance().addSpriteFrames(plist);
+            jc.parsed[plist] = true;
+        }
+
+        this.effects = {};
+        jc.log(['batching'], 'init from frame');
+        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame(firstFrame);
+        if (!frame){
+            throw firstFrame + " for sprite: " + config.name + " was not found.";
+        }
 		this.initWithSpriteFrame(frame);
+        jc.log(['batching'], 'add child to batch');
+
+        if (jc.config.batch){
+            this.batch.addChild(this);
+        }
+
+        this.retain(); //j03m fix leak
         this.type = config.type;
         if(this.type != 'background'){
-            this.superDraw = this.draw;
-            this.draw = this.customDraw;
             this.initHealthBar();
             this.initShadow();
+            this.scheduleUpdate();
         }
 
         this.debug = false;
@@ -56,12 +91,6 @@ jc.Sprite = cc.Sprite.extend({
             throw 'Unrecognized behavior name: ' + config.behavior;
         }
 
-        //set it
-        var behavior = new behaviorClass(this);
-
-        this.behavior = behavior;
-        this.behaviorType = config.behavior;
-
 
         this.gameObject = new jc.GameObject();
         if(config.gameProperties){
@@ -69,35 +98,63 @@ jc.Sprite = cc.Sprite.extend({
         }
         this.gameObject.init();
 
+
+        var behavior = new behaviorClass(this);
+
+        this.behavior = behavior;
+        this.behaviorType = config.behavior;
+
+        this.getTexture().generateMipmap();
+
 		return this;
 	},
+    ready: function(){
+        this.isReady = true;
+        this.updateHealthBarPos();
+        this.updateShadowPosition();
+        this.setVisible(true);
+
+    },
     die:function(){
         this.imdeadman=true;
-        this.layer.removeChild(this);
-        this.layer.removeChild(this.shadow);
-        this.layer.removeChild(this.healthBar);
-        this.cleanUp();
+        this.layer.removeChild(this, true);
+        this.healthBar.setVisible(false);
+    },
+    fallToShadow:function(){
+        var pos = this.shadow;
+        var moveDiff = cc.pSub(pos, this.getPosition());
+        var distanceToMove = cc.pLength(moveDiff);
+        var moveDuration = distanceToMove/this.gameObject.speed;
+        var action = cc.MoveTo.create(pos, moveDuration);
+        this.runAction(action);
     },
     disableHealthBar:function(){
         this.hideHealthbar = true;
     },
     initShadow:function(){
-        this.shadow = new cc.Sprite();
-        cc.SpriteFrameCache.getInstance().addSpriteFrames(shadowPlist);
-        cc.SpriteBatchNode.create(shadowPng);
-        //todo change to size of sprite
-        var frame = cc.SpriteFrameCache.getInstance().getSpriteFrame("shadowSmall.png");
-        this.shadow.initWithSpriteFrame(frame);
-        this.shadow.setScaleX(0.5);
-        this.layer.addChild(this.shadow);
-        this.layer.reorderChild(this.shadow, (cc.Director.getInstance().getWinSize().height+9) * -1);
         this.updateShadowPosition();
     },
     initHealthBar:function(){
-        this.healthBar = cc.DrawNode.create();
-        this.healthBar.contentSize = cc.SizeMake(this.HealthBarWidth, this.HealthBarHeight);
-        this.layer.addChild(this.healthBar);
+        if (!this.healthBar){
+            this.healthBar = cc.DrawNode.create();
+            this.healthBar.retain(); //j03m fix leak
+            this.healthBar.contentSize = cc.size(this.HealthBarWidth, this.HealthBarHeight);
+            this.healthBar.name = "healthBar";
+            this.layer.addChild(this.healthBar);
+        }
+
         this.updateHealthBarPos();
+    },
+    reset: function(){
+        this.clearEffects();
+        this.removeAllChildren(true);
+        this.behavior.reset();
+
+        this.gameObject.hp = this.gameObject.MaxHP;
+        this.initHealthBar();
+        this.healthBar.setVisible(true);
+        this.drawHealthBar();
+
     },
 	cleanUp: function(){
 		if (this.currentMove){
@@ -108,12 +165,11 @@ jc.Sprite = cc.Sprite.extend({
 
         //this.stopAction(this.animations[this.state].action);
 		this.state = -1;
-        this.layer.removeChild(this.shadow);
-        this.layer.removeChild(this.healthBar);
+        this.layer.removeChild(this.healthBar, true);
         for(var i =0; i<this.animations.length; i++){
 			this.animations[i].action.release();
 		}
-        this.batch.release();
+        //this.batch.release();
 
 	},
 	addDef: function(entry) {
@@ -166,6 +222,7 @@ jc.Sprite = cc.Sprite.extend({
 		//if the entry type is a loop create a forver action
 		if (entry.type == jc.AnimationTypeLoop){
  			action = cc.RepeatForever.create(cc.Animate.create(animation));
+            action.retain(); //j03m fix leak
 			action.tag = entry.state;
 
 		}else{
@@ -180,16 +237,26 @@ jc.Sprite = cc.Sprite.extend({
 		}
 		return action;
 	},
-    update: function(dt){
-        if (!this.isAlive()){
-            this.think(dt);
-        }
-    },
     getTargetRadius:function(){
-        return this.gameObject.targetRadius;
+        return this.gameObject.targetRadius * jc.characterScaleFactor;
     },
     getTargetRadiusY:function(){
-        return this.gameObject.targetRadius/4;
+        if (this.behaviorType == 'range' || this.behaviorType == 'healer'){
+            return this.gameObject.targetRadius* jc.characterScaleFactor;
+        }else{
+            return (this.gameObject.targetRadius/2) *  jc.characterScaleFactor;
+
+        }
+
+    },
+    removeAnimation:function(name){
+        if (this.effectAnimations && this.effectAnimations[name]){
+            this.effectAnimations[name].sprite.stopAction(this.effectAnimations[name].animation);
+            this.removeChild(this.effectAnimations[name].sprite, false);
+            this.effectAnimations[name].playing = false;
+        }
+
+
     },
     getSeekRadius: function(){
         return this.gameObject.seekRadius;
@@ -202,12 +269,32 @@ jc.Sprite = cc.Sprite.extend({
         return point;
     },
     setBasePosition:function(point){
-        var box = this.getContentSize();
-        point.y += box.height/2;
+        if (!this.box){
+            this.box = this.getContentSize();
+        }
+
+        point.y += this.box.height/2;
+        if (!this.lastPoint){
+            this.layer.reorderChild(this, point.y*-1);
+            this.lastPoint = point;
+        }else{
+            var diff = Math.abs(this.lastPoint.y - point.y);
+            if (diff > 25 * jc.characterScaleFactor) {
+                this.layer.reorderChild(this, point.y*-1);
+                this.lastPoint = point;
+            }
+        }
+        point.x = Math.ceil(point.x);
+        point.y = Math.ceil(point.y);
         this.setPosition(point);
-        this.layer.reorderChild(this, point.y*-1);
+
         this.updateHealthBarPos();
         this.updateShadowPosition();
+
+        if (this.id){ //if i hae an id that means we're tracking slices
+            this.layer.trackSlice(this.id, this.team, this.gameObject.movementType, this, point);
+        }
+
     },
     moveTo: function(point, state, velocity, callback){
 		jc.log(['sprite', 'move'],"Moving:"+ this.name);
@@ -273,6 +360,9 @@ jc.Sprite = cc.Sprite.extend({
     removeEffect:function(effect){
         delete this.effects[effect];
     },
+    clearEffects:function(){
+        this.effects = {};
+    },
 	setState:function(state, callback){
         if (!state){
             throw "Undefined state passed to setState";
@@ -280,6 +370,10 @@ jc.Sprite = cc.Sprite.extend({
 		//catch next state and current state
         var currentState = this.state;
 		this.state = state;
+
+        if (this.state == 'dead'){
+            this.setZOrder(jc.shadowZOrder+1);
+        }
 
         jc.log(['sprite', 'state'],"State Change For:" + this.name + ' from:' + currentState + ' to:' + this.state);
 
@@ -295,6 +389,7 @@ jc.Sprite = cc.Sprite.extend({
         }else{
             this.nextState = 'dead';
         }
+
 
         //make sure start state is known
         var startMe = this.animations[this.state];
@@ -342,17 +437,8 @@ jc.Sprite = cc.Sprite.extend({
         }
         this.behavior = new behaviorClass(this);
     },
-    think:function(dt){
-        this.behavior.think(dt);
-    },
-    customDraw:function(){
-        if (!this.imdeadman){
-            this.superDraw();
-            if (this.debug){
-                this.drawBorders();
-            }
-            this.drawHealthBar();
-        }
+    think:function(dt, selected){
+        this.behavior.think(dt, selected);
     },
     drawBorders:function(){
 
@@ -379,21 +465,29 @@ jc.Sprite = cc.Sprite.extend({
         poly.drawPoly(vertices, fill, borderWidth, border);
     },
     drawHealthBar: function(){
+        jc.log(['healthbar'], "hide health bar?" + this.hideHealthbar);
         if (!this.hideHealthbar){
+            jc.log(['healthbar'], "healthbar");
             this.healthBar.clear();
-            var verts = [4];
+            var verts = [];
             verts[0] = cc.p(0.0, 0.0);
             verts[1] = cc.p(0.0, this.HealthBarHeight - 1.0);
             verts[2] = cc.p(this.HealthBarWidth - 1.0, this.HealthBarHeight - 1.0);
             verts[3] = cc.p(this.HealthBarWidth - 1.0, 0.0);
 
             var clearColor = cc.c4f(255.0/255, 0.0, 0.0, 1.0);
-            var fillColor = cc.c4f(26.0/255.0, 245.0/255.0, 15.0/255.0, 1.0);
+            var fillColor;
+            if (!this.healthBarColor){
+                fillColor = cc.c4f(26.0/255.0, 245.0/255.0, 15.0/255.0, 1.0);
+            }else{
+                fillColor = this.healthBarColor;
+            }
+
             var borderColor = cc.c4f(35.0/255.0, 28.0/255.0, 40.0/255.0, 1.0);
 
             this.healthBar.drawPoly(verts,clearColor,0.7, borderColor);
 
-            var verts2 = [4];
+            var verts2 = [];
             var hpRatio = this.gameObject.hp/this.gameObject.MaxHP;
             if (hpRatio <0){
                 hpRatio = 0;
@@ -406,10 +500,14 @@ jc.Sprite = cc.Sprite.extend({
 
 
             this.healthBar.drawPoly(verts2,fillColor,0.7, borderColor);
+            jc.log(['healthbar'], "healthbar");
         }
     },
+    update:function(){
+        this.drawHealthBar();
+    },
     updateHealthBarPos:function(){
-        if (this.type != 'background'){
+        if (this.type != 'background' && this.isVisible()){
             var myPos = this.getBasePosition();
             var tr = this.getTextureRect();
             myPos.y += tr.height + 10;
@@ -421,20 +519,11 @@ jc.Sprite = cc.Sprite.extend({
     updateShadowPosition:function(){
         if (this.type!='background'){
             var pos = this.getBasePosition();
-            var cs = this.getContentSize();
-
-            pos.y += 5;
-            if (!this.isFlippedX()){
-                pos.x = (pos.x - cs.width) + 250;
-            }else{
-                pos.x = (pos.x - cs.width) + 270;
-            }
-
             if (this.gameObject && this.gameObject.flightAug){
                 pos.y-= this.gameObject.flightAug.y/2; //for flight, shadow should be further away
             }
 
-            this.shadow.setPosition(pos);
+            this.shadow = pos;
         }
     }
 });
@@ -472,6 +561,8 @@ jc.Sprite.getMinMax = function(character){
     character.startFrame = min;
     character.endFrame = max;
 }
+
+
 
 jc.Sprite.spriteGenerator = function(allDefs, def, layer){
 
@@ -519,6 +610,7 @@ jc.Sprite.spriteGenerator = function(allDefs, def, layer){
     //init
     character.type = 'character';
     sprite.initWithPlist(g_characterPlists[def], g_characterPngs[def], nameFormat.format(firstFrame), character);
+
     //create definitions from the animation states
     for (var animation in character.animations){
         //use this to create a definition in the sprite
@@ -540,9 +632,11 @@ jc.Sprite.spriteGenerator = function(allDefs, def, layer){
         jc.playEffectOnTarget(character.effect, sprite, layer, true);
     }
 
-    //return the sprite;
+    //return the sprite
+
     return sprite;
 }
+
 
 
 jc.randomNum= function(min, max){
