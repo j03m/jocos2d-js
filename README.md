@@ -1,12 +1,6 @@
 jocos2d-js
 ==========
 
-This is a series of tools built in conjunction with our next game Heroes of the Rift for cocos2d-html5.
+This is a series of tools built in conjunction with our next game RiftSummoner for cocos2d-html5. Techdemo at http://www.riftsummoner.com 
 
-This release probably isn't fully functional without some game files from hotr, but there are some neat tools like JCScrollingLayer, JCTouchLayer, JCUiElements and JCUtils that should be.
-
-It's also still pretty messy as we lead up to release, but I wanted to get it out into the world before I got too busy.
-
-This is currently only tested with cocos2d-html5, but we'll add support for cocos2dx-js shortly. 
-
-Watch this space.
+Tools for jocos2d-js. Most of the tools here are fully functional and should be stand alone without the majority of the riftsummoner codebase. HOWEVER - JC.Touchlayer is currently pinned to our private branch of cocos2d-html5. We've modified the touch handlers to merge standard and multitouch handlers. We'll open this up shortly or create a work around so the current cocos2d-html5 can be used without our mods.
